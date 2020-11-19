@@ -1,15 +1,96 @@
-let addToy = false;
+let toyList = [];
 
-document.addEventListener("DOMContentLoaded", () => {
-  const addBtn = document.querySelector("#new-toy-btn");
-  const toyFormContainer = document.querySelector(".container");
-  addBtn.addEventListener("click", () => {
-    // hide & seek with the form
-    addToy = !addToy;
-    if (addToy) {
-      toyFormContainer.style.display = "block";
-    } else {
-      toyFormContainer.style.display = "none";
-    }
-  });
+const toysUrl = 'http://localhost:3000/toys';
+const el = (id) => document.getElementById(id);
+
+document.addEventListener('DOMContentLoaded', () => {
+  el('new-toy-form').addEventListener('submit', addNewToyFromForm);
+  el('show-hide-form-btn').addEventListener('click', () =>
+    toggleVisibility('new-toy-form')
+  );
+
+  doFetch(toysUrl).then(createToyCards);
 });
+
+function createToyCards(toys) {
+  toyList = toys;
+  renderToys();
+}
+
+function renderToys() {
+  el('toy-collection').innerHTML = '';
+  toyList.forEach(addToyToCollection);
+}
+
+function addToyToCollection(toy) {
+  const toyCard = document.createElement('div');
+  toyCard.classList.add('card');
+  toyCard.innerHTML = `
+    <h2>${toy.name}</h2>
+    <img src=${toy.image} class="toy-avatar" />
+    <p>${toy.likes} Likes </p>
+  `;
+
+  const likeButton = document.createElement('button');
+  likeButton.classList.add('like-btn');
+  likeButton.innerText = 'Like ❤️';
+  toyCard.append(likeButton);
+  toyCard.addEventListener('click', () => incrementLikes(toy));
+
+  el('toy-collection').append(toyCard);
+}
+
+function addNewToyFromForm(event) {
+  event.preventDefault();
+
+  const toyData = {
+    name: event.target.name.value,
+    image: event.target.image.value,
+    likes: 0,
+  };
+
+  toyList.push(toyData);
+  renderToys();
+
+  doFetch(toysUrl, 'POST', toyData).then((json) => {
+    toyData.id = json.id;
+    renderToys();
+  });
+}
+
+function incrementLikes(toy) {
+  toy.likes++;
+  renderToys();
+
+  doFetch(`${toysUrl}/${toy.id}`, 'PATCH', {
+    likes: toy.likes,
+  });
+}
+
+/////
+
+function toggleVisibility(element) {
+  const classes = el(element).classList;
+  if (classes.contains('hidden')) {
+    classes.remove('hidden');
+  } else {
+    classes.add('hidden');
+  }
+}
+
+function doFetch(url, method = 'GET', body = '') {
+  const headers = {
+    'Content-Type': 'application/json',
+    Accept: 'application/json',
+  };
+
+  const config = {
+    method,
+    headers,
+    body: method !== 'GET' ? JSON.stringify(body) : undefined,
+  };
+
+  return fetch(url, config)
+    .then((res) => res.json())
+    .catch(console.error);
+}
