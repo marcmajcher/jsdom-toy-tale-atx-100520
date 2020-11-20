@@ -8,6 +8,9 @@ document.addEventListener('DOMContentLoaded', () => {
   el('show-hide-form-btn').addEventListener('click', () =>
     toggleVisibility('new-toy-form')
   );
+  el('close-form-btn').addEventListener('click', () =>
+    toggleVisibility('new-toy-form', false)
+  );
 
   doFetch(toysUrl).then(createToyCards);
 });
@@ -19,12 +22,17 @@ function createToyCards(toys) {
 
 function renderToys() {
   el('toy-collection').innerHTML = '';
-  toyList.forEach(addToyToCollection);
+  toyList.forEach(appendToyToCollection);
 }
 
-function addToyToCollection(toy) {
+function appendToyToCollection(toy) {
+  el('toy-collection').append(getToyCard(toy));
+}
+
+function getToyCard(toy) {
   const toyCard = document.createElement('div');
   toyCard.classList.add('card');
+
   toyCard.innerHTML = `
     <h2>${toy.name}</h2>
     <img src=${toy.image} class="toy-avatar" />
@@ -37,7 +45,7 @@ function addToyToCollection(toy) {
   toyCard.append(likeButton);
   toyCard.addEventListener('click', () => incrementLikes(toy));
 
-  el('toy-collection').append(toyCard);
+  return toyCard;
 }
 
 function addNewToyFromForm(event) {
@@ -54,7 +62,7 @@ function addNewToyFromForm(event) {
 
   doFetch(toysUrl, 'POST', toyData).then((json) => {
     toyData.id = json.id;
-    renderToys();
+    renderToys(); // I still don't like the double renderToys() here, but ¯\_(ツ)_/¯
   });
 }
 
@@ -69,9 +77,9 @@ function incrementLikes(toy) {
 
 /////
 
-function toggleVisibility(element) {
+function toggleVisibility(element, visible) {
   const classes = el(element).classList;
-  if (classes.contains('hidden')) {
+  if (classes.contains('hidden') && !visible) {
     classes.remove('hidden');
   } else {
     classes.add('hidden');
